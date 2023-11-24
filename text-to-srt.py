@@ -2,11 +2,18 @@ import re
 import argparse
 import os
 import tempfile
+import logging
 from nltk.tokenize import sent_tokenize
 import nltk
 
-# Ensure that the necessary NLTK tokenizers are downloaded
-nltk.download('punkt')
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Check and download NLTK data if not present
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 def read_text_file(file_path):
     """Reads a text file and returns its content."""
@@ -14,9 +21,11 @@ def read_text_file(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     except FileNotFoundError as e:
-        raise Exception("The file was not found. Please check the path.") from e
+        logging.error("The file was not found. Please check the path.")
+        raise e
     except IOError as e:
-        raise Exception("Could not read the file. Please check if the file is accessible.") from e
+        logging.error("Could not read the file. Please check if the file is accessible.")
+        raise e
 
 def split_into_sentences(text):
     """Splits text into sentences using NLTK for better accuracy."""
@@ -57,14 +66,16 @@ def format_subtitles(sentence_pairs, display_times):
 def save_subtitle_file(subtitles, output_file_path):
     """Saves the subtitles to a file, using a temporary file for atomic writes."""
     try:
-        # Write to a temporary file to avoid corruption of an existing file
-        with tempfile.NamedTemporaryFile('w', delete=False, encoding='utf-8') as tmpfile:
+        # Create a temporary file in the same directory as the output file
+        dir_name = os.path.dirname(output_file_path)
+        with tempfile.NamedTemporaryFile('w', delete=False, dir=dir_name, encoding='utf-8') as tmpfile:
             tmpfile.write('\n'.join(subtitles))
             tempname = tmpfile.name
         # Replace the target file with the temporary file
         os.replace(tempname, output_file_path)
     except IOError as e:
-        raise Exception("Could not write to the file. Please check if you have write permissions.") from e
+        logging.error("Could not write to the file. Please check if you have write permissions.")
+        raise e
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert text to subtitle file with customizable sentence grouping.")
@@ -87,5 +98,7 @@ if __name__ == "__main__":
         display_times = calculate_display_times(sentence_pairs, args.words_per_minute)
         subtitles = format_subtitles(sentence_pairs, display_times)
         save_subtitle_file(subtitles, args.output_file_path)
+        logging.info("Subtitle file created successfully at %s", args.output_file_path)
     except Exception as e:
-        print(str(e))
+        logging.error("An error occurred: %s", str(e))
+        exit(1)
