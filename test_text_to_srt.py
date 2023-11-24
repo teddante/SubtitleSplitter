@@ -1,5 +1,5 @@
 import unittest
-from subtitle_converter import (read_text_file, split_into_sentences, pair_sentences,
+from text_to_srt import (read_text_file, split_into_sentences, pair_sentences,
                                 calculate_display_times, format_timecode, format_subtitles)
 
 class TestSubtitleConverter(unittest.TestCase):
