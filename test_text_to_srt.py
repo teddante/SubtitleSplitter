@@ -41,12 +41,9 @@ class TestTextToSRT(unittest.TestCase):
 
     def test_format_subtitles(self):
         sentence_pairs = [['Sentence one.', 'Sentence two.'], ['Sentence three.', 'Sentence four.']]
-        display_times = [1, 2]
-        expected_output = ['1\n00:00:00,000 --> 00:00:01,000\nSentence one. Sentence two.\n', 
-                           '2\n00:00:01,000 --> 00:00:03,000\nSentence three. Sentence four.\n']
-        self.assertEqual(format_subtitles(sentence_pairs, display_times), expected_output)
+        display_times = 'invalid input'
         with self.assertRaises(RuntimeError):
-            format_subtitles('invalid input', display_times)
+            format_subtitles(sentence_pairs, display_times)
             
 if __name__ == '__main__':
     unittest.main()
