@@ -20,5 +20,5 @@
         <Button Grid.Row="1" x:Name="ImportButton" Text="Import File" Clicked="OnImportClicked" VerticalOptions="Start" Padding="10"
                 AutomationProperties.Name="Import File Button" />
     </Grid>
-
+    
 </ContentPage>
