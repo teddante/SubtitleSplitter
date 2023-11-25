@@ -30,6 +30,10 @@
                 SemanticProperties.Hint="Counts the number of times you click"
                 Clicked="OnCounterClicked"
                 HorizontalOptions="Fill" />
+
+            <Entry x:Name="InputTextBox" Placeholder="Enter text here..." />
+
+            <Button x:Name="ImportButton" Text="Import File" Clicked="OnImportClicked" />
         </VerticalStackLayout>
     </ScrollView>
 
