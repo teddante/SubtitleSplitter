@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34310.174
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubtitleSplitter", "SubtitleSplitter\SubtitleSplitter.csproj", "{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubtitleSplitter", "SubtitleSplitter\SubtitleSplitter.csproj", "{AEDD489C-FB63-478E-B9EE-3B851B728995}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,17 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2D1D29BA-B82E-4EAC-B6E9-9D83A0192BF9}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{AEDD489C-FB63-478E-B9EE-3B851B728995}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEDD489C-FB63-478E-B9EE-3B851B728995}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEDD489C-FB63-478E-B9EE-3B851B728995}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEDD489C-FB63-478E-B9EE-3B851B728995}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {965AE56F-A75A-4F0C-ADE8-132FAEA71030}
+		SolutionGuid = {1FA86BD8-7F9C-4116-8517-249927EEDABC}
 	EndGlobalSection
 EndGlobal
