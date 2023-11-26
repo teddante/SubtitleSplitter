@@ -1,40 +1,38 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SubtitleSplitter;
 
 namespace Tests
 {
     [TestClass()]
-    public class ProgramTests
+    public class SubtitleSplitterTests
     {
+        readonly string tempFilePath = Path.GetTempFileName();
+
         [TestMethod]
         public void ConvertTextToSubtitles_EmptyString_ReturnsEmptyArray()
         {
-            var result = Program.ConvertTextToSubtitles("");
+            var result = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles("");
             Assert.AreEqual(0, result.Length);
         }
 
         [TestMethod]
         public void ConvertTextToSubtitles_OneSentence_ReturnsOneSubtitle()
         {
-            var result = Program.ConvertTextToSubtitles("This is a test.");
+            var result = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles("This is a test.");
             Assert.AreEqual(1, result.Length);
         }
 
         [TestMethod]
         public void ConvertTextToSubtitles_MultipleSentences_ReturnsMultipleSubtitles()
         {
-            var result = Program.ConvertTextToSubtitles("This is a test. Another test.");
+            var result = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles("This is a test. Another test.");
             Assert.AreEqual(2, result.Length);
         }
 
         [TestMethod]
         public void ConvertTextToSubtitles_MultipleSentencesAndSentencesPerSubtitle_ReturnsCorrectNumberOfSubtitles()
         {
-            var result = Program.ConvertTextToSubtitles("This is a test. Another test. Yet another test.", 2);
+            var result = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles("This is a test. Another test. Yet another test.", 2);
             Assert.AreEqual(2, result.Length);
         }
 
@@ -43,7 +41,7 @@ namespace Tests
         {
             try
             {
-                Program.SaveSubtitlesToFile(Array.Empty<string>());
+                SubtitleSplitter.SubtitleSplitter.SaveSubtitlesToFile([], tempFilePath);
             }
             catch
             {
@@ -56,7 +54,7 @@ namespace Tests
         {
             try
             {
-                Program.SaveSubtitlesToFile(["Test subtitle"]);
+                SubtitleSplitter.SubtitleSplitter.SaveSubtitlesToFile(["Test subtitle"], tempFilePath);
             }
             catch
             {
@@ -69,7 +67,7 @@ namespace Tests
         {
             try
             {
-                Program.SaveSubtitlesToFile(["Test subtitle", "Another test subtitle"]);
+                SubtitleSplitter.SubtitleSplitter.SaveSubtitlesToFile(["Test subtitle", "Another test subtitle"], tempFilePath);
             }
             catch
             {
