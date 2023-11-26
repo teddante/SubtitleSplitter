@@ -1,10 +1,10 @@
-﻿internal class Program
+﻿public class Program
 {
     /// <summary>
     /// The entry point of the application.
     /// </summary>
     /// <param name="args">The command-line arguments.</param>
-    private static void Main(string[] args)
+    public static void Main(string[] args)
     {
         if (args.Length == 0)
         {
@@ -22,7 +22,7 @@
     /// Saves the given array of subtitles to a file.
     /// </summary>
     /// <param name="subtitles">The array of subtitles to be saved.</param>
-    private static void SaveSubtitlesToFile(string[] subtitles)
+    public static void SaveSubtitlesToFile(string[] subtitles)
     {
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "subtitles.srt");
         File.WriteAllLines(path, subtitles);
@@ -34,8 +34,13 @@
     /// <param name="text">The text to be converted into subtitles.</param>
     /// <param name="sentencesPerSubtitle">The number of sentences per subtitle.</param>
     /// <returns>An array of subtitles.</returns>
-    private static string[] ConvertTextToSubtitles(string text, int sentencesPerSubtitle = 2)
+    public static string[] ConvertTextToSubtitles(string text, int sentencesPerSubtitle = 2)
     {
+        if (string.IsNullOrEmpty(text))
+        {
+            return [];
+        }
+
         var sentences = text.Split('.');
         var subtitles = new List<string>();
         var subtitleNumber = 1;
