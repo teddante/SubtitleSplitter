@@ -1,6 +1,8 @@
-﻿namespace SubtitleSplitter
+﻿using System.Text.RegularExpressions;
+
+namespace SubtitleSplitter
 {
-    public class SubtitleSplitter
+    public partial class SubtitleSplitter
     {
         /// <summary>
         /// The entry point of the application.
@@ -8,16 +10,70 @@
         /// <param name="args">The command-line arguments.</param>
         public static void Main(string[] args)
         {
-            if (args.Length == 0)
+            var filePath = ValidateAndParseArgs(args);
+            if (filePath == null)
             {
-                Console.WriteLine("Please drag a text file onto the exe.");
                 return;
             }
 
+            try
+            {
+                var text = ReadFile(filePath);
+                if (text != null)
+                {
+                    var subtitles = ConvertTextToSubtitles(text);
+                    SaveSubtitlesToFile(subtitles, filePath);
+                }
+                else
+                {
+                    Console.WriteLine("Failed to read file or file is empty.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to read file: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Validates and parses the command line arguments.
+        /// </summary>
+        /// <param name="args">The command line arguments.</param>
+        /// <returns>The validated and parsed file path, or null if validation fails.</returns>
+        private static string? ValidateAndParseArgs(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("Please drag a text file onto the exe.");
+                return null;
+            }
+
             var filePath = args[0];
-            var text = File.ReadAllText(filePath);
-            var subtitles = ConvertTextToSubtitles(text);
-            SaveSubtitlesToFile(subtitles, filePath);
+            if (!File.Exists(filePath) || Path.GetExtension(filePath) != ".txt")
+            {
+                Console.WriteLine("Invalid file path. Please provide a valid text file.");
+                return null;
+            }
+
+            return filePath;
+        }
+
+        /// <summary>
+        /// Reads the contents of a file.
+        /// </summary>
+        /// <param name="filePath">The path of the file to read.</param>
+        /// <returns>The contents of the file as a string, or null if an error occurs.</returns>
+        private static string? ReadFile(string filePath)
+        {
+            try
+            {
+                return File.ReadAllText(filePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to read file: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -48,14 +104,15 @@
         /// <param name="text">The text to be converted into subtitles.</param>
         /// <param name="sentencesPerSubtitle">The number of sentences per subtitle.</param>
         /// <returns>An array of subtitles.</returns>
-        public static string[] ConvertTextToSubtitles(string text, int sentencesPerSubtitle = 2)
+        public static string[] ConvertTextToSubtitles(string text, int sentencesPerSubtitle = 1, int gapDuration = 1)
         {
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text) || sentencesPerSubtitle <= 0)
             {
                 return [];
             }
 
-            var sentences = text.Split('.');
+            // Split text into sentences using regular expression
+            var sentences = MyRegex().Split(text);
             var subtitles = new List<string>();
             var subtitleNumber = 1;
             var startTime = TimeSpan.Zero;
@@ -64,7 +121,7 @@
             for (var i = 0; i < sentences.Length; i += sentencesPerSubtitle)
             {
                 var groupOfSentences = sentences.Skip(i).Take(sentencesPerSubtitle).ToArray();
-                var sentence = string.Join(". ", groupOfSentences);
+                var sentence = string.Join(" ", groupOfSentences);
                 var wordCount = sentence.Split(' ').Length;
                 var duration = TimeSpan.FromMinutes((double)wordCount / wordsPerMinute);
                 var endTime = startTime + duration;
@@ -73,10 +130,13 @@
                 subtitles.Add(subtitle);
 
                 subtitleNumber++;
-                startTime = endTime;
+                startTime = endTime.Add(TimeSpan.FromSeconds(gapDuration));
             }
 
             return [.. subtitles];
         }
+
+        [GeneratedRegex(@"(?<=[\.!\?\r\n])\s+")]
+        private static partial Regex MyRegex();
     }
 }
