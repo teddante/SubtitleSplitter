@@ -17,7 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SubtitleSplitter\SubtitleSplitter.csproj" />
+    <ProjectReference Include="..\\..\\src\\SubtitleSplitter\\SubtitleSplitter.csproj" />
   </ItemGroup>
 
 </Project>
+

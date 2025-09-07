@@ -764,3 +764,9 @@ pyrightconfig.json
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudio,visualstudiocode,csharp
+
+# Ensure build artifacts are ignored
+src/**/bin/
+src/**/obj/
+tests/**/bin/
+tests/**/obj/
