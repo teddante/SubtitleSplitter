@@ -13,7 +13,7 @@ SubtitleSplitter is a simple command-line tool written in C# that allows you to 
 
 ### Prerequisites
 
-- .NET SDK
+- .NET 8 SDK
 
 ### Installation
 
@@ -40,10 +40,14 @@ dotnet build
 To use SubtitleSplitter, simply drag a `.txt` file onto the executable or run it from the command line with the file path as an argument.
 
 ```bash
-SubtitleSplitter.exe "path/to/your/file.txt"
+# Windows
+SubtitleSplitter.exe "path/to/your/file.txt" [--sentences-per-subtitle 2] [--wpm 200] [--cps 15] [--gap 1.0] [--min-duration 1.0] [--max-duration 7.0] [--split-on-newline] [--output path|dir] [--max-line-length 42] [--max-lines 2]
+
+# Cross-platform
+dotnet run --project src/SubtitleSplitter -- "path/to/your/file.txt" [options]
 ```
 
-The tool will then generate an `.srt` file in the same directory as the input file.
+The tool generates an `.srt` file in the same directory as the input file by default, or to the path specified by `--output` (file or directory). Use `--help` to see all options.
 
 ## Contributing
 
@@ -51,4 +55,4 @@ If you would like to contribute to the development of SubtitleSplitter, please f
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.

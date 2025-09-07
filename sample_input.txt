@@ -1,0 +1,5 @@
+﻿This is the first sentence. Here is the second sentence! And the third sentence?
+Line breaks should be normalized.   Multiple   spaces become one.
+This continues with more sentences. Dr. Smith went home. He slept. Version 3.2 is out.
+AReallyLongWordThatIsLongerThanFortyTwoCharactersWhichShouldSplitAtHardBreak.
+Final one.

@@ -15,4 +15,4 @@ csharp_preferred_modifier_order = public, private, protected, internal, static, 
 # Analyzer-friendly defaults
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
-Dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
