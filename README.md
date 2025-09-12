@@ -40,7 +40,7 @@ dotnet build
 
 ### Usage
 
-Run the tool with a single argument: the path to your input `.txt` file. It will generate an `.srt` file in the same directory named `<input>_subtitles.srt` using default settings.
+Run the tool with a single argument: the path to your input `.txt` file. It will generate both an `.srt` and an `.fcpxml` file in the same directory named `<input>_subtitles.srt` and `<input>_subtitles.fcpxml`.
 
 ```bash
 # Windows
@@ -51,6 +51,14 @@ dotnet run --project src/SubtitleSplitter -- "path/to/your/file.txt"
 ```
 
 Behavior is fixed to simple defaults: one sentence per subtitle, average reading speed timing, zero inter-caption gap, and up to 2 lines at ~42 characters per line.
+
+### FCPXML export (for NLEs like DaVinci Resolve)
+
+An FCPXML 1.8 timeline is written by default alongside the SRT. It places each subtitle as a "Basic Title" clip at the correct time span. Many editors (including DaVinci Resolve) can import this format.
+
+Notes:
+- The FCPXML uses a 1080p30 sequence and Basic Title effect.
+- Output filenames follow `<input>_subtitles.srt` and `<input>_subtitles.fcpxml`.
 
 ## Contributing
 

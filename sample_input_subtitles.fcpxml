@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fcpxml version="1.8">
+  <resources>
+    <format id="r1" name="FFVideoFormat1080p30" frameDuration="1/30s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+    <effect id="r2" name="Basic Title" uid="/Titles/Basic/Basic Title"/>
+  </resources>
+  <library>
+    <event name="sample_input">
+      <project name="sample_input">
+        <sequence format="r1" tcStart="0s" tcFormat="NDF">
+          <spine>
+            <title name="This is the first sentence." ref="r2" offset="0/30s" duration="54/30s" lane="1">
+              <text>
+                <text-style ref="ts1">This is the first sentence.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="Here is the second sentence!" ref="r2" offset="54/30s" duration="56/30s" lane="1">
+              <text>
+                <text-style ref="ts1">Here is the second sentence!</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="And the third sentence?" ref="r2" offset="110/30s" duration="46/30s" lane="1">
+              <text>
+                <text-style ref="ts1">And the third sentence?</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="Line breaks should be normalized." ref="r2" offset="156/30s" duration="66/30s" lane="1">
+              <text>
+                <text-style ref="ts1">Line breaks should be normalized.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="Multiple spaces become one." ref="r2" offset="222/30s" duration="54/30s" lane="1">
+              <text>
+                <text-style ref="ts1">Multiple spaces become one.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="This continues with more sentences." ref="r2" offset="276/30s" duration="70/30s" lane="1">
+              <text>
+                <text-style ref="ts1">This continues with more sentences.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="Dr. Smith went home." ref="r2" offset="346/30s" duration="40/30s" lane="1">
+              <text>
+                <text-style ref="ts1">Dr. Smith went home.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="He slept." ref="r2" offset="386/30s" duration="18/30s" lane="1">
+              <text>
+                <text-style ref="ts1">He slept.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="Version 3.2 is out." ref="r2" offset="404/30s" duration="38/30s" lane="1">
+              <text>
+                <text-style ref="ts1">Version 3.2 is out.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="AReallyLongWordThatIsLongerThanFortyTwoCha" ref="r2" offset="442/30s" duration="154/30s" lane="1">
+              <text>
+                <text-style ref="ts1">AReallyLongWordThatIsLongerThanFortyTwoCha&amp;#10;ractersWhichShouldSplitAtHardBreak.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+            <title name="Final one." ref="r2" offset="596/30s" duration="20/30s" lane="1">
+              <text>
+                <text-style ref="ts1">Final one.</text-style>
+              </text>
+              <text-style-def id="ts1">
+                <text-style font="Helvetica" fontSize="48" alignment="center"/>
+              </text-style-def>
+            </title>
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>

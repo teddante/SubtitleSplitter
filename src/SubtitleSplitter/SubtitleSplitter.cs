@@ -14,7 +14,7 @@ namespace SubtitleSplitter
 
         public static void Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length < 1)
             {
                 Console.WriteLine("Usage: SubtitleSplitter <input.txt>");
                 Environment.ExitCode = 1;
@@ -39,10 +39,15 @@ namespace SubtitleSplitter
                     return;
                 }
 
-                var subtitles = ConvertTextToSubtitles(text);
+                var entries = ConvertTextToEntries(text);
 
+                // Always export both SRT and FCPXML by default
+                var subtitles = EntriesToSrtBlocks(entries);
                 SaveSubtitlesToFile(subtitles, inputPath);
-                Console.WriteLine("Subtitle file created successfully.");
+                Console.WriteLine("SRT file created successfully.");
+
+                SaveFcpXmlToFile(entries, inputPath);
+                Console.WriteLine("FCPXML file created successfully.");
             }
             catch (Exception ex)
             {
@@ -88,15 +93,32 @@ namespace SubtitleSplitter
 
         public static string[] ConvertTextToSubtitles(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return Array.Empty<string>();
-            
+            var entries = ConvertTextToEntries(text);
+            return EntriesToSrtBlocks(entries);
+        }
+
+        private static string[] EntriesToSrtBlocks(IReadOnlyList<SubtitleEntry> entries)
+        {
+            var blocks = new List<string>(entries.Count);
+            foreach (var e in entries)
+            {
+                var wrapped = string.Join("\n", e.Lines);
+                blocks.Add(FormatSubtitle(e.Index, e.Start, e.End, wrapped));
+            }
+            return blocks.ToArray();
+        }
+
+        public static List<SubtitleEntry> ConvertTextToEntries(string text)
+        {
+            var result = new List<SubtitleEntry>();
+            if (string.IsNullOrWhiteSpace(text)) return result;
+
             // Split sentences; keep only non-empty, trimmed items
             var sentences = SplitIntoSentences(text)
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToArray();
 
-            var blocks = new List<string>();
             int number = 1;
             var start = TimeSpan.Zero;
 
@@ -115,15 +137,105 @@ namespace SubtitleSplitter
                 var duration = TimeSpan.FromSeconds(durationSec);
                 var end = start + duration;
 
-                var wrapped = WrapText(blockText, MaxLineLength, MaxLines);
-                blocks.Add(FormatSubtitle(number, start, end, wrapped));
-                number++;
+                var wrapped = WrapText(blockText, MaxLineLength, MaxLines).Split('\n');
 
-                // No gap between captions
-                start = end;
+                result.Add(new SubtitleEntry
+                {
+                    Index = number,
+                    Start = start,
+                    End = end,
+                    Lines = wrapped
+                });
+                number++;
+                start = end; // No gap between captions
             }
 
-            return blocks.ToArray();
+            return result;
+        }
+
+        private static void SaveFcpXmlToFile(IReadOnlyList<SubtitleEntry> entries, string inputFilePath)
+        {
+            if (entries == null) throw new ArgumentNullException(nameof(entries));
+            if (string.IsNullOrEmpty(inputFilePath))
+                throw new ArgumentException("File path cannot be null or empty.");
+
+            string fullInputPath = Path.GetFullPath(inputFilePath);
+            var directory = Path.GetDirectoryName(fullInputPath);
+            if (string.IsNullOrEmpty(directory)) directory = Environment.CurrentDirectory;
+            var fileName = Path.GetFileNameWithoutExtension(fullInputPath);
+
+            var outputPath = Path.Combine(directory!, $"{fileName}_subtitles.fcpxml");
+
+            var xml = BuildFcpXml(entries, projectName: fileName);
+            File.WriteAllText(outputPath, xml, new UTF8Encoding(false));
+        }
+
+        private static string BuildFcpXml(IReadOnlyList<SubtitleEntry> entries, string projectName)
+        {
+            // Build a minimal FCPXML 1.8 project with a 1080p30 sequence and a series of Basic Title clips
+            // positioned by offset/duration. This form imports into DaVinci Resolve and other NLEs.
+            const int fps = 30;
+            string Encode(string s)
+            {
+                return s
+                    .Replace("&", "&amp;")
+                    .Replace("<", "&lt;")
+                    .Replace(">", "&gt;")
+                    .Replace("\"", "&quot;");
+            }
+
+            string FormatRational(TimeSpan t)
+            {
+                // Represent as integer frames over fps, e.g. 45/30s
+                var frames = (long)Math.Round(t.TotalSeconds * fps);
+                return $"{frames}/{fps}s";
+            }
+
+            string JoinLinesForText(IEnumerable<string> lines)
+            {
+                // Use &#10; for line breaks
+                return Encode(string.Join("&#10;", lines));
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.AppendLine("<fcpxml version=\"1.8\">");
+            sb.AppendLine("  <resources>");
+            sb.AppendLine("    <format id=\"r1\" name=\"FFVideoFormat1080p30\" frameDuration=\"1/30s\" width=\"1920\" height=\"1080\" colorSpace=\"1-1-1 (Rec. 709)\"/>");
+            // Basic Title effect reference; many NLEs (including Resolve) map this identifier
+            sb.AppendLine("    <effect id=\"r2\" name=\"Basic Title\" uid=\"/Titles/Basic/Basic Title\"/>");
+            sb.AppendLine("  </resources>");
+            sb.AppendLine("  <library>");
+            sb.AppendLine($"    <event name=\"{Encode(projectName)}\">");
+            sb.AppendLine($"      <project name=\"{Encode(projectName)}\">");
+            sb.AppendLine("        <sequence format=\"r1\" tcStart=\"0s\" tcFormat=\"NDF\">");
+            sb.AppendLine("          <spine>");
+
+            // Emit titles
+            foreach (var e in entries)
+            {
+                var offset = FormatRational(e.Start);
+                var duration = FormatRational(e.End - e.Start);
+                var name = e.Lines.Length > 0 ? e.Lines[0] : $"Subtitle {e.Index}";
+                var text = JoinLinesForText(e.Lines);
+
+                sb.AppendLine($"            <title name=\"{Encode(name)}\" ref=\"r2\" offset=\"{offset}\" duration=\"{duration}\" lane=\"1\">");
+                sb.AppendLine("              <text>");
+                sb.AppendLine($"                <text-style ref=\"ts1\">{text}</text-style>");
+                sb.AppendLine("              </text>");
+                sb.AppendLine("              <text-style-def id=\"ts1\">");
+                sb.AppendLine("                <text-style font=\"Helvetica\" fontSize=\"48\" alignment=\"center\"/>");
+                sb.AppendLine("              </text-style-def>");
+                sb.AppendLine("            </title>");
+            }
+
+            sb.AppendLine("          </spine>");
+            sb.AppendLine("        </sequence>");
+            sb.AppendLine("      </project>");
+            sb.AppendLine("    </event>");
+            sb.AppendLine("  </library>");
+            sb.AppendLine("</fcpxml>");
+            return sb.ToString();
         }
 
         private static string NormalizeCaptionText(string s)
@@ -284,5 +396,13 @@ namespace SubtitleSplitter
 
         [GeneratedRegex(@"(?i)\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|Mt|Msgr|Messrs|vs|etc|e\.g|i\.e|cf|al)\.$")]
         private static partial Regex AbbrevEndRegex();
+
+        public class SubtitleEntry
+        {
+            public int Index { get; set; }
+            public TimeSpan Start { get; set; }
+            public TimeSpan End { get; set; }
+            public string[] Lines { get; set; } = Array.Empty<string>();
+        }
     }
 }
