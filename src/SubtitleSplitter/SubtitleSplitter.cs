@@ -193,17 +193,21 @@ namespace SubtitleSplitter
 
             string JoinLinesForText(IEnumerable<string> lines)
             {
-                // Use &#10; for line breaks
-                return Encode(string.Join("&#10;", lines));
+                // Use &#10; for line breaks; encode lines individually to preserve the entity
+                return string.Join("&#10;", lines.Select(Encode));
             }
 
             var sb = new StringBuilder();
             sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             sb.AppendLine("<fcpxml version=\"1.8\">");
             sb.AppendLine("  <resources>");
-            sb.AppendLine("    <format id=\"r1\" name=\"FFVideoFormat1080p30\" frameDuration=\"1/30s\" width=\"1920\" height=\"1080\" colorSpace=\"1-1-1 (Rec. 709)\"/>");
+            sb.AppendLine("    <format id=\"r1\" frameDuration=\"1/30s\" width=\"1920\" height=\"1080\" colorSpace=\"1-1-1 (Rec. 709)\"/>");
             // Basic Title effect reference; many NLEs (including Resolve) map this identifier
             sb.AppendLine("    <effect id=\"r2\" name=\"Basic Title\" uid=\"/Titles/Basic/Basic Title\"/>");
+            // Global text style definition (referenced by titles)
+            sb.AppendLine("    <text-style-def id=\"ts1\">");
+            sb.AppendLine("      <text-style font=\"Helvetica\" fontSize=\"48\" alignment=\"center\"/>");
+            sb.AppendLine("    </text-style-def>");
             sb.AppendLine("  </resources>");
             sb.AppendLine("  <library>");
             sb.AppendLine($"    <event name=\"{Encode(projectName)}\">");
@@ -219,13 +223,10 @@ namespace SubtitleSplitter
                 var name = e.Lines.Length > 0 ? e.Lines[0] : $"Subtitle {e.Index}";
                 var text = JoinLinesForText(e.Lines);
 
-                sb.AppendLine($"            <title name=\"{Encode(name)}\" ref=\"r2\" offset=\"{offset}\" duration=\"{duration}\" lane=\"1\">");
+                sb.AppendLine($"            <title name=\"{Encode(name)}\" ref=\"r2\" offset=\"{offset}\" duration=\"{duration}\">");
                 sb.AppendLine("              <text>");
                 sb.AppendLine($"                <text-style ref=\"ts1\">{text}</text-style>");
                 sb.AppendLine("              </text>");
-                sb.AppendLine("              <text-style-def id=\"ts1\">");
-                sb.AppendLine("                <text-style font=\"Helvetica\" fontSize=\"48\" alignment=\"center\"/>");
-                sb.AppendLine("              </text-style-def>");
                 sb.AppendLine("            </title>");
             }
 
