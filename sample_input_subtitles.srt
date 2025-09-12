@@ -3,42 +3,42 @@
 This is the first sentence.
 
 2
-00:00:02,300 --> 00:00:04,166
+00:00:02,800 --> 00:00:04,666
 Here is the second sentence!
 
 3
-00:00:04,666 --> 00:00:06,199
+00:00:05,666 --> 00:00:07,199
 And the third sentence?
 
 4
-00:00:06,699 --> 00:00:08,899
+00:00:08,199 --> 00:00:10,399
 Line breaks should be normalized.
 
 5
-00:00:09,399 --> 00:00:11,199
+00:00:11,399 --> 00:00:13,199
 Multiple spaces become one.
 
 6
-00:00:11,699 --> 00:00:14,033
+00:00:14,199 --> 00:00:16,533
 This continues with more sentences.
 
 7
-00:00:14,533 --> 00:00:15,866
+00:00:17,533 --> 00:00:18,866
 Dr. Smith went home.
 
 8
-00:00:16,366 --> 00:00:17,366
+00:00:19,866 --> 00:00:20,866
 He slept.
 
 9
-00:00:17,866 --> 00:00:19,133
+00:00:21,866 --> 00:00:23,133
 Version 3.2 is out.
 
 10
-00:00:19,633 --> 00:00:22,633
+00:00:24,133 --> 00:00:29,266
 AReallyLongWordThatIsLongerThanFortyTwoCha
 ractersWhichShouldSplitAtHardBreak.
 
 11
-00:00:23,133 --> 00:00:24,133
+00:00:30,266 --> 00:00:31,266
 Final one.

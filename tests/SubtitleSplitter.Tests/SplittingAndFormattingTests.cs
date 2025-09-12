@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using SubtitleSplitter;
 using Xunit;
@@ -62,14 +63,24 @@ public class SplittingAndFormattingTests
     }
 
     [Fact]
-    public void WrapsToMaxTwoLines()
+    public void WrapsToMaxTwoLines_NoTruncation()
     {
         var text = "This is a very long sentence that should wrap to two lines based on the configured maximum line length.";
         var opts = DefaultOptions with { MaxLineLength = 28, MaxLines = 2 };
         var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text, opts);
         var body = GetBodyLines(blocks[0]);
+        // No more than two lines in the caption
         body.Length.Should().BeLessOrEqualTo(2);
-        body.All(l => l.Length <= 28).Should().BeTrue();
+        // Lines except the final one should respect the max line length
+        if (body.Length > 1)
+        {
+            body.Take(body.Length - 1).All(l => l.Length <= 28).Should().BeTrue();
+        }
+
+        // Ensure no truncation: joined text should equal normalized input
+        string Normalize(string s) => Regex.Replace(s.Replace("\r", " ").Replace("\n", " "), "\\s+", " ").Trim();
+        var joined = Normalize(string.Join(" ", body));
+        joined.Should().Be(Normalize(text));
     }
 
     private static (TimeSpan start, TimeSpan end) ParseTimes(string block)

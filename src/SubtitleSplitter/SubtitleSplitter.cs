@@ -18,7 +18,7 @@ namespace SubtitleSplitter
         public sealed record Options
         {
             public string InputPath { get; init; } = string.Empty;
-            public int SentencesPerSubtitle { get; init; } = 2;
+            public int SentencesPerSubtitle { get; init; } = 1;
             public int WordsPerMinute { get; init; } = DefaultWpm;
             public double Cps { get; init; } = DefaultCps;
             public double GapSeconds { get; init; } = 1.0;
@@ -227,6 +227,8 @@ namespace SubtitleSplitter
 
         private static string WrapText(string text, int maxLineLength, int maxLines)
         {
+            // Goal: wrap up to maxLines, but NEVER truncate content.
+            // If content would exceed maxLines, overflow the final line (ignore maxLineLength for the last line).
             if (maxLines <= 0) return text;
             if (maxLineLength <= 10) maxLineLength = 10;
 
@@ -234,76 +236,80 @@ namespace SubtitleSplitter
             var lines = new List<string>();
             var line = new StringBuilder();
 
-            foreach (var word in words)
+            int i = 0;
+            while (i < words.Length)
             {
-                if (line.Length == 0)
+                // For all lines except the final allowed line, respect maxLineLength and wrap normally.
+                if (lines.Count < maxLines - 1)
                 {
-                    if (word.Length > maxLineLength)
+                    var word = words[i];
+
+                    if (line.Length == 0)
                     {
-                        int idx = 0;
-                        while (idx < word.Length && lines.Count < maxLines)
+                        if (word.Length <= maxLineLength)
                         {
-                            int take = Math.Min(maxLineLength, word.Length - idx);
-                            var segment = word.Substring(idx, take);
-                            if (take == maxLineLength || idx + take < word.Length)
+                            line.Append(word);
+                            i++;
+                        }
+                        else
+                        {
+                            // Hard break long word across multiple lines (still respecting maxLines - 1 limit)
+                            int idx = 0;
+                            while (idx < word.Length && lines.Count < maxLines - 1)
                             {
-                                // full line segment
-                                lines.Add(segment);
+                                int take = Math.Min(maxLineLength, word.Length - idx);
+                                lines.Add(word.Substring(idx, take));
+                                idx += take;
+                            }
+
+                            // Put any remainder of the long word onto the current (last) line buffer
+                            if (idx < word.Length)
+                            {
+                                line.Append(word.Substring(idx));
+                                i++;
                             }
                             else
                             {
-                                line.Append(segment);
+                                // Exactly consumed; keep line empty for next word
+                                i++;
                             }
-                            idx += take;
                         }
+                    }
+                    else if (line.Length + 1 + word.Length <= maxLineLength)
+                    {
+                        line.Append(' ').Append(word);
+                        i++;
                     }
                     else
                     {
-                        line.Append(word);
+                        // Current line full, commit and start a new one
+                        lines.Add(line.ToString());
+                        line.Clear();
                     }
-                }
-                else if (line.Length + 1 + word.Length <= maxLineLength)
-                {
-                    line.Append(' ').Append(word);
                 }
                 else
                 {
-                    lines.Add(line.ToString());
-                    line.Clear();
-                    // If a single word is longer than max, hard-break it
-                    if (word.Length > maxLineLength)
-                    {
-                        int idx = 0;
-                        while (idx < word.Length)
-                        {
-                            int take = Math.Min(maxLineLength, word.Length - idx);
-                            if (lines.Count < maxLines - 1)
-                            {
-                                lines.Add(word.Substring(idx, take));
-                            }
-                            else
-                            {
-                                // Put remainder in the last line
-                                line.Append(word.Substring(idx, take));
-                            }
-                            idx += take;
-                            if (lines.Count >= maxLines) break;
-                        }
-                    }
+                    // Final allowed line: append everything regardless of maxLineLength to avoid truncation
+                    if (line.Length == 0)
+                        line.Append(words[i]);
                     else
-                    {
-                        line.Append(word);
-                    }
+                        line.Append(' ').Append(words[i]);
+                    i++;
                 }
-
-                if (lines.Count >= maxLines) break;
             }
 
-            if (lines.Count < maxLines && line.Length > 0)
+            if (line.Length > 0)
                 lines.Add(line.ToString());
 
-            // If still have words left and exceeded lines, append remainder to last line
-            return string.Join("\n", lines.Take(maxLines));
+            // Ensure we do not exceed maxLines in the return value
+            if (lines.Count > maxLines)
+            {
+                // Merge any overflow lines into the last allowed line
+                var tail = string.Join(" ", lines.Skip(maxLines - 1));
+                return string.Join("\n", lines.Take(maxLines - 1).Concat(new[] { tail }));
+            }
+
+            return string.Join("\n", lines);
         }
 
         [GeneratedRegex(@"(?<=[\.!\?\n])\s+")]
