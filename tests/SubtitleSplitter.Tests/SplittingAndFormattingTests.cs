@@ -9,26 +9,12 @@ namespace SubtitleSplitterProject.Tests;
 
 public class SplittingAndFormattingTests
 {
-    private static SubtitleSplitter.SubtitleSplitter.Options DefaultOptions => new()
-    {
-        SentencesPerSubtitle = 1,
-        WordsPerMinute = 200,
-        Cps = 15,
-        GapSeconds = 1,
-        MinDurationSec = 1,
-        MaxDurationSec = 7,
-        SplitOnNewline = false,
-        MaxLineLength = 30,
-        MaxLines = 2,
-        InputPath = "dummy.txt"
-    };
 
     [Fact]
     public void DoesNotSplitOnAbbreviations()
     {
         var text = "Dr. Smith went home. He slept.";
-        var opts = DefaultOptions with { SentencesPerSubtitle = 1 };
-        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text, opts);
+        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text);
         // Expect 2 captions
         blocks.Length.Should().Be(2);
         blocks[0].Should().Contain("Dr. Smith went home.");
@@ -39,42 +25,33 @@ public class SplittingAndFormattingTests
     public void DoesNotSplitDecimalNumbers()
     {
         var text = "Version 3.2 is out. It's great.";
-        var opts = DefaultOptions;
-        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text, opts);
+        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text);
         blocks.Length.Should().Be(2);
         blocks[0].Should().Contain("Version 3.2 is out.");
         blocks[1].Should().Contain("It's great.");
     }
 
     [Fact]
-    public void EnforcesDurationClamp()
+    public void ComputesDurationByAverageCps()
     {
-        var text = "Hi."; // short -> ensure min duration
-        var opts = DefaultOptions with { WordsPerMinute = 1000, Cps = 1000, MinDurationSec = 2, MaxDurationSec = 3 };
-        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text, opts);
+        var text = "Hi."; // 3 characters -> 3 / 15 = 0.2s
+        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text);
         var times = ParseTimes(blocks[0]);
-        (times.end - times.start).TotalSeconds.Should().BeApproximately(2.0, 0.01);
-
-        var longText = string.Join(" ", Enumerable.Repeat("word", 100)); // long -> ensure max duration
-        opts = DefaultOptions with { WordsPerMinute = 10, Cps = 1, MinDurationSec = 1, MaxDurationSec = 3 };
-        blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(longText, opts);
-        times = ParseTimes(blocks[0]);
-        (times.end - times.start).TotalSeconds.Should().BeApproximately(3.0, 0.01);
+        (times.end - times.start).TotalSeconds.Should().BeApproximately(3.0 / 15.0, 0.01);
     }
 
     [Fact]
     public void WrapsToMaxTwoLines_NoTruncation()
     {
         var text = "This is a very long sentence that should wrap to two lines based on the configured maximum line length.";
-        var opts = DefaultOptions with { MaxLineLength = 28, MaxLines = 2 };
-        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text, opts);
+        var blocks = SubtitleSplitter.SubtitleSplitter.ConvertTextToSubtitles(text);
         var body = GetBodyLines(blocks[0]);
         // No more than two lines in the caption
         body.Length.Should().BeLessOrEqualTo(2);
         // Lines except the final one should respect the max line length
         if (body.Length > 1)
         {
-            body.Take(body.Length - 1).All(l => l.Length <= 28).Should().BeTrue();
+            body.Take(body.Length - 1).All(l => l.Length <= 42).Should().BeTrue();
         }
 
         // Ensure no truncation: joined text should equal normalized input

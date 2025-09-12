@@ -5,29 +5,12 @@ namespace SubtitleSplitter
 {
     public partial class SubtitleSplitter
     {
-        // Sensible defaults (tune as needed)
-        private const int DefaultWpm = 200;          // words per minute
-        private const double DefaultCps = 15.0;      // characters per second (reading speed cap)
-        private const double DefaultMinDurationSec = 1.0;   // default minimum on-screen time
-        private const double DefaultMaxDurationSec = 7.0;   // default maximum on-screen time
-        private const double MinTechnicalGapSec = 0.2;      // minimum gap between cues
-
-        private const int DefaultMaxLineLength = 42; // target characters per line
-        private const int DefaultMaxLines = 2;       // target max lines per caption
-
-        public sealed record Options
-        {
-            public string InputPath { get; init; } = string.Empty;
-            public int SentencesPerSubtitle { get; init; } = 1;
-            public int WordsPerMinute { get; init; } = DefaultWpm;
-            public double Cps { get; init; } = DefaultCps;
-            public double GapSeconds { get; init; } = 1.0;
-            public double MinDurationSec { get; init; } = DefaultMinDurationSec;
-            public double MaxDurationSec { get; init; } = DefaultMaxDurationSec;
-            public bool SplitOnNewline { get; init; } = false;
-            public int MaxLineLength { get; init; } = DefaultMaxLineLength;
-            public int MaxLines { get; init; } = DefaultMaxLines;
-        }
+        // Simplified behavior: one sentence per caption,
+        // duration = characters / AverageCps, no inter-caption gap.
+        private const double AverageCps = 15.0;      // average reading speed (characters per second)
+        private const int SentencesPerSubtitle = 1;  // fixed grouping
+        private const int MaxLineLength = 42;        // target characters per line
+        private const int MaxLines = 2;              // target max lines per caption
 
         public static void Main(string[] args)
         {
@@ -39,11 +22,10 @@ namespace SubtitleSplitter
             }
 
             var inputPath = args[0];
-            var options = new Options { InputPath = inputPath };
 
             try
             {
-                var text = ReadFile(options!.InputPath);
+                var text = ReadFile(inputPath);
                 if (text == null)
                 {
                     // ReadFile already printed an error
@@ -57,9 +39,9 @@ namespace SubtitleSplitter
                     return;
                 }
 
-                var subtitles = ConvertTextToSubtitles(text, options!);
+                var subtitles = ConvertTextToSubtitles(text);
 
-                SaveSubtitlesToFile(subtitles, options!.InputPath);
+                SaveSubtitlesToFile(subtitles, inputPath);
                 Console.WriteLine("Subtitle file created successfully.");
             }
             catch (Exception ex)
@@ -104,18 +86,12 @@ namespace SubtitleSplitter
             File.WriteAllText(outputPath, srt, new UTF8Encoding(false));
         }
 
-        public static string[] ConvertTextToSubtitles(string text, Options options)
+        public static string[] ConvertTextToSubtitles(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return Array.Empty<string>();
-            if (options.SentencesPerSubtitle <= 0) throw new ArgumentOutOfRangeException(nameof(options.SentencesPerSubtitle));
-            if (options.WordsPerMinute <= 0) throw new ArgumentOutOfRangeException(nameof(options.WordsPerMinute));
-            if (options.Cps <= 0) throw new ArgumentOutOfRangeException(nameof(options.Cps));
-            if (options.GapSeconds < 0) throw new ArgumentOutOfRangeException(nameof(options.GapSeconds));
-            if (options.MinDurationSec <= 0) throw new ArgumentOutOfRangeException(nameof(options.MinDurationSec));
-            if (options.MaxDurationSec <= 0) throw new ArgumentOutOfRangeException(nameof(options.MaxDurationSec));
-
+            
             // Split sentences; keep only non-empty, trimmed items
-            var sentences = SplitIntoSentences(text, options.SplitOnNewline)
+            var sentences = SplitIntoSentences(text)
                 .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToArray();
@@ -124,33 +100,27 @@ namespace SubtitleSplitter
             int number = 1;
             var start = TimeSpan.Zero;
 
-            for (int i = 0; i < sentences.Length; i += options.SentencesPerSubtitle)
+            for (int i = 0; i < sentences.Length; i += SentencesPerSubtitle)
             {
-                var group = sentences.Skip(i).Take(options.SentencesPerSubtitle);
+                var group = sentences.Skip(i).Take(SentencesPerSubtitle);
                 var blockText = NormalizeCaptionText(string.Join(" ", group));
                 if (blockText.Length == 0) continue;
 
                 // Reading time estimates
-                int wordCount = blockText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
                 int charCount = blockText.Length;
 
-                double secByWpm = (wordCount / (double)options.WordsPerMinute) * 60.0;
-                double secByCps = charCount / options.Cps;
-
-                // Choose conservative (larger) time, then clamp
-                double durationSec = Math.Max(secByWpm, secByCps);
-                durationSec = Math.Clamp(durationSec, options.MinDurationSec, options.MaxDurationSec);
+                // Duration based solely on average reading rate
+                double durationSec = charCount / AverageCps;
 
                 var duration = TimeSpan.FromSeconds(durationSec);
                 var end = start + duration;
 
-                var wrapped = WrapText(blockText, options.MaxLineLength, options.MaxLines);
+                var wrapped = WrapText(blockText, MaxLineLength, MaxLines);
                 blocks.Add(FormatSubtitle(number, start, end, wrapped));
                 number++;
 
-                // Apply max of requested gap and minimum technical gap
-                var gap = TimeSpan.FromSeconds(Math.Max(options.GapSeconds, MinTechnicalGapSec));
-                start = end + gap;
+                // No gap between captions
+                start = end;
             }
 
             return blocks.ToArray();
@@ -178,12 +148,9 @@ namespace SubtitleSplitter
         }
 
         // Sentence splitting with basic abbreviation and number handling
-        private static IEnumerable<string> SplitIntoSentences(string text, bool splitOnNewline)
+        private static IEnumerable<string> SplitIntoSentences(string text)
         {
             text = text.Replace("\r\n", "\n");
-            if (splitOnNewline)
-                return text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
             // First pass: naive split on end punctuation
             var parts = NaiveSentenceSplitRegex().Split(text).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
             if (parts.Count <= 1) return parts;

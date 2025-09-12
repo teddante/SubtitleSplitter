@@ -6,7 +6,11 @@ SubtitleSplitter is a simple command-line tool written in C# that allows you to 
 
 - Read a text file and split it into sentences.
 - Convert sentences into a subtitle file format.
-- Sensible defaults for subtitle timing and wrapping.
+- Sensible defaults for timing and wrapping.
+  - One sentence per caption
+  - Duration = characters / 15 cps (average reading speed)
+  - No gap between consecutive captions
+  - Wrapped to max 2 lines at ~42 characters per line (no truncation)
 
 ## Getting Started
 
@@ -46,7 +50,7 @@ SubtitleSplitter.exe "path/to/your/file.txt"
 dotnet run --project src/SubtitleSplitter -- "path/to/your/file.txt"
 ```
 
-All options are fixed to safe defaults (e.g., 2 sentences per subtitle, reasonable reading speed, and 2 lines max at ~42 characters per line).
+Behavior is fixed to simple defaults: one sentence per subtitle, average reading speed timing, zero inter-caption gap, and up to 2 lines at ~42 characters per line.
 
 ## Contributing
 
