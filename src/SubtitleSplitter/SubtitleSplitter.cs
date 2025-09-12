@@ -18,7 +18,6 @@ namespace SubtitleSplitter
         public sealed record Options
         {
             public string InputPath { get; init; } = string.Empty;
-            public string? OutputPath { get; init; }
             public int SentencesPerSubtitle { get; init; } = 2;
             public int WordsPerMinute { get; init; } = DefaultWpm;
             public double Cps { get; init; } = DefaultCps;
@@ -32,14 +31,15 @@ namespace SubtitleSplitter
 
         public static void Main(string[] args)
         {
-            var parse = TryParseOptions(args, out var options, out var parseErrorOrHelp);
-            if (!parse)
+            if (args.Length != 1)
             {
-                if (!string.IsNullOrEmpty(parseErrorOrHelp))
-                    Console.WriteLine(parseErrorOrHelp);
+                Console.WriteLine("Usage: SubtitleSplitter <input.txt>");
                 Environment.ExitCode = 1;
                 return;
             }
+
+            var inputPath = args[0];
+            var options = new Options { InputPath = inputPath };
 
             try
             {
@@ -59,7 +59,7 @@ namespace SubtitleSplitter
 
                 var subtitles = ConvertTextToSubtitles(text, options!);
 
-                SaveSubtitlesToFile(subtitles, options!.InputPath, options!.OutputPath);
+                SaveSubtitlesToFile(subtitles, options!.InputPath);
                 Console.WriteLine("Subtitle file created successfully.");
             }
             catch (Exception ex)
@@ -69,171 +69,6 @@ namespace SubtitleSplitter
             }
         }
         
-        private static bool TryParseOptions(string[] args, out Options? options, out string message)
-        {
-            options = null;
-            message = string.Empty;
-            if (args.Length == 0)
-            {
-                message = GetUsage();
-                return false;
-            }
-
-            string? inputPath = null;
-            string? outputPath = null;
-            int? sps = null;
-            int? wpm = null;
-            double? cps = null;
-            double? gap = null;
-            double? minDur = null;
-            double? maxDur = null;
-            bool splitOnNewline = false;
-            int? maxLineLen = null;
-            int? maxLines = null;
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                var arg = args[i];
-                if (arg is "-h" or "--help" or "/?")
-                {
-                    message = GetUsage();
-                    return false;
-                }
-
-                if (arg.StartsWith("--"))
-                {
-                    string key;
-                    string? value = null;
-                    var idx = arg.IndexOf('=');
-                    if (idx > 0)
-                    {
-                        key = arg.Substring(2, idx - 2);
-                        value = arg[(idx + 1)..];
-                    }
-                    else
-                    {
-                        key = arg[2..];
-                        // If next token is not another switch, treat as value
-                        if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
-                        {
-                            value = args[i + 1];
-                            i++;
-                        }
-                    }
-
-                    switch (key)
-                    {
-                        case "output":
-                            if (string.IsNullOrEmpty(value)) return Fail("--output requires a value", out options, out message);
-                            outputPath = value;
-                            break;
-                        case "sentences-per-subtitle":
-                            if (!int.TryParse(value, out var spsVal) || spsVal <= 0) return Fail("--sentences-per-subtitle must be a positive integer", out options, out message);
-                            sps = spsVal;
-                            break;
-                        case "wpm":
-                            if (!int.TryParse(value, out var wpmVal) || wpmVal <= 0) return Fail("--wpm must be a positive integer", out options, out message);
-                            wpm = wpmVal;
-                            break;
-                        case "cps":
-                            if (!double.TryParse(value, out var cpsVal) || cpsVal <= 0) return Fail("--cps must be a positive number", out options, out message);
-                            cps = cpsVal;
-                            break;
-                        case "gap":
-                            if (!double.TryParse(value, out var gapVal) || gapVal < 0) return Fail("--gap must be a non-negative number", out options, out message);
-                            gap = gapVal;
-                            break;
-                        case "min-duration":
-                            if (!double.TryParse(value, out var minVal) || minVal <= 0) return Fail("--min-duration must be a positive number", out options, out message);
-                            minDur = minVal;
-                            break;
-                        case "max-duration":
-                            if (!double.TryParse(value, out var maxVal) || maxVal <= 0) return Fail("--max-duration must be a positive number", out options, out message);
-                            maxDur = maxVal;
-                            break;
-                        case "split-on-newline":
-                            // boolean flag, no value expected
-                            splitOnNewline = true;
-                            break;
-                        case "max-line-length":
-                            if (!int.TryParse(value, out var mll) || mll <= 10) return Fail("--max-line-length must be an integer > 10", out options, out message);
-                            maxLineLen = mll;
-                            break;
-                        case "max-lines":
-                            if (!int.TryParse(value, out var ml) || ml <= 0) return Fail("--max-lines must be a positive integer", out options, out message);
-                            maxLines = ml;
-                            break;
-                        default:
-                            return Fail($"Unknown option --{key}", out options, out message);
-                    }
-                }
-                else if (arg.StartsWith("-"))
-                {
-                    // short options
-                    if (arg is "-o")
-                    {
-                        if (i + 1 >= args.Length || args[i + 1].StartsWith("-")) return Fail("-o requires a value", out options, out message);
-                        outputPath = args[i + 1];
-                        i++;
-                    }
-                    else
-                    {
-                        return Fail($"Unknown option {arg}", out options, out message);
-                    }
-                }
-                else
-                {
-                    if (inputPath == null) inputPath = arg; // first non-switch is input path
-                    else return Fail("Only one input file can be specified", out options, out message);
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(inputPath)) return Fail("Input file path is required.\n" + GetUsage(), out options, out message);
-            if (!File.Exists(inputPath)) return Fail($"Input file not found: {inputPath}", out options, out message);
-
-            // Extension is not restricted; warn if not .txt (non-fatal)
-
-            if (minDur.HasValue && maxDur.HasValue && minDur.Value > maxDur.Value)
-                return Fail("--min-duration cannot be greater than --max-duration", out options, out message);
-
-            options = new Options
-            {
-                InputPath = inputPath!,
-                OutputPath = outputPath,
-                SentencesPerSubtitle = sps ?? 2,
-                WordsPerMinute = wpm ?? DefaultWpm,
-                Cps = cps ?? DefaultCps,
-                GapSeconds = gap ?? 1.0,
-                MinDurationSec = minDur ?? DefaultMinDurationSec,
-                MaxDurationSec = maxDur ?? DefaultMaxDurationSec,
-                SplitOnNewline = splitOnNewline,
-                MaxLineLength = maxLineLen ?? DefaultMaxLineLength,
-                MaxLines = maxLines ?? DefaultMaxLines
-            };
-            return true;
-
-            static bool Fail(string msg, out Options? o, out string m)
-            {
-                o = null; m = msg; return false;
-            }
-        }
-
-        private static string GetUsage() =>
-            "Usage:\n" +
-            "  SubtitleSplitter <input.txt> [options]\n\n" +
-            "Options:\n" +
-            "  --sentences-per-subtitle <int>   Number of sentences per caption (default 2)\n" +
-            "  --wpm <int>                      Words per minute (default 200)\n" +
-            "  --cps <number>                   Characters per second cap (default 15)\n" +
-            "  --gap <seconds>                  Gap between captions (default 1.0)\n" +
-            "  --min-duration <seconds>         Minimum caption duration (default 1.0)\n" +
-            "  --max-duration <seconds>         Maximum caption duration (default 7.0)\n" +
-            "  --split-on-newline               Split by newline instead of sentence detection\n" +
-            "  --max-line-length <int>          Target max characters per line (default 42)\n" +
-            "  --max-lines <int>                Max lines per caption (default 2)\n" +
-            "  --output <path|dir>              Output file path or directory\n" +
-            "  -o <path|dir>                    Short form for --output\n" +
-            "  --help, -h                       Show this help\n";
 
         private static string? ReadFile(string filePath)
         {
@@ -252,7 +87,7 @@ namespace SubtitleSplitter
             }
         }
 
-        public static void SaveSubtitlesToFile(string[] subtitles, string inputFilePath, string? output)
+        public static void SaveSubtitlesToFile(string[] subtitles, string inputFilePath)
         {
             if (string.IsNullOrEmpty(inputFilePath))
                 throw new ArgumentException("File path cannot be null or empty.");
@@ -261,44 +96,8 @@ namespace SubtitleSplitter
             var directory = Path.GetDirectoryName(fullInputPath);
             if (string.IsNullOrEmpty(directory)) directory = Environment.CurrentDirectory;
             var fileName = Path.GetFileNameWithoutExtension(fullInputPath);
-
-            string outputPath;
-            if (!string.IsNullOrWhiteSpace(output))
-            {
-                var outPath = output!;
-                if (Directory.Exists(outPath) || outPath.EndsWith(Path.DirectorySeparatorChar) || outPath.EndsWith(Path.AltDirectorySeparatorChar))
-                {
-                    // Treat as directory
-                    Directory.CreateDirectory(outPath);
-                    outputPath = Path.Combine(outPath, $"{fileName}_subtitles.srt");
-                }
-                else if (Path.GetExtension(outPath).Equals(".srt", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Treat as file path
-                    var outDir = Path.GetDirectoryName(Path.GetFullPath(outPath));
-                    if (!string.IsNullOrEmpty(outDir)) Directory.CreateDirectory(outDir);
-                    outputPath = Path.GetFullPath(outPath);
-                }
-                else
-                {
-                    // Unknown form; if parent exists treat as file, else as directory
-                    var parent = Path.GetDirectoryName(outPath);
-                    if (!string.IsNullOrEmpty(parent))
-                    {
-                        Directory.CreateDirectory(parent);
-                        outputPath = Path.GetFullPath(outPath);
-                    }
-                    else
-                    {
-                        Directory.CreateDirectory(outPath);
-                        outputPath = Path.Combine(outPath, $"{fileName}_subtitles.srt");
-                    }
-                }
-            }
-            else
-            {
-                outputPath = Path.Combine(directory!, $"{fileName}_subtitles.srt");
-            }
+            
+            var outputPath = Path.Combine(directory!, $"{fileName}_subtitles.srt");
 
             // Join with Windows line endings to conform with SRT expectations
             var srt = string.Join("\r\n", subtitles.Select(s => s.Replace("\n", "\r\n")));
