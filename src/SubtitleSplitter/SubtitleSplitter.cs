@@ -102,8 +102,9 @@ namespace SubtitleSplitter
             var blocks = new List<string>(entries.Count);
             foreach (var e in entries)
             {
-                var wrapped = string.Join("\n", e.Lines);
-                blocks.Add(FormatSubtitle(e.Index, e.Start, e.End, wrapped));
+                // For SRT generation, do not word-wrap: join lines with spaces
+                var unwrapped = string.Join(" ", e.Lines);
+                blocks.Add(FormatSubtitle(e.Index, e.Start, e.End, unwrapped));
             }
             return blocks.ToArray();
         }
